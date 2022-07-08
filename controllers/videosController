@@ -1,0 +1,38 @@
+const Videos = require("../models/Videos");
+
+//GET all videos
+module.exports.getVideos = async (req, res) => {
+  try {
+    const p = req.query?.p;
+    const allVideos = await Videos.find().sort({ publishTime: -1 });
+    if (!allVideos)
+      return res.status(404).json({ message: "Videos not found" });
+
+    //pagination
+    const pageCount = Math.ceil(allVideos.length / 10);
+    let page = parseInt(p);
+    if (!page) page = 1;
+    if (page > pageCount) page = pageCount;
+    const videos = allVideos.slice(page * 10 - 10, page * 10);
+
+    return res.status(200).json({
+      page,
+      pageCount,
+      videos,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Error in fetching videos", error });
+  }
+};
+
+//Searching a video accroding to the search query
+module.exports.searchVideos = async (req, res) => {
+  try {
+    const { query } = req.body;
+    const videos = await Videos.find({ $text: { $search: query } });
+    if (!videos) return res.status(404).json({ message: "Videos not found" });
+    return res.status(201).json({ videos });
+  } catch (error) {
+    return res.status(500).json({ message: "Error in search videos", error });
+  }
+};
